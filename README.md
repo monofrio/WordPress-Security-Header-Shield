@@ -9,6 +9,10 @@
 - **X-XSS-Protection Header**: Mitigate cross-site scripting (XSS) attacks with this essential header.
 - **Content-Security-Policy (CSP) Frame-Src**: Define approved domains for embedding frames. Includes a default list for convenience and allows users to add custom domains.
 
+## Compatibility
+- Fully tested and compatible with Gutenberg-based sites.
+- Supports WordPress versions from the Gutenberg release (WordPress 5.0) and higher.
+
 ## Installation
 1. Download the plugin from this repository or your WordPress admin dashboard.
 2. Navigate to `Plugins` > `Add New` in your WordPress admin area.
