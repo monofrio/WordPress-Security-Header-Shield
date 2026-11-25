@@ -8,54 +8,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // callback: validate options
+// Builds a fresh array so only known keys are ever saved.
 function security_header_callback_validate_options( $input ) {
 
-    // Validate Radio Field Options
-    $validate_radio_lists =  array(
-        'referrer-policy' => referrer_policy_options_radio(),
-        'x-content-type-options' => xctp_options_radio(),
-        'x-xss-protection' => xss_options_radio(),
-        'content-security-policy-frame-src' => csp_frame_src_options_radio ()
+    $input    = is_array( $input ) ? $input : array();
+    $defaults = security_header_options_default();
+    $output   = array();
+
+    // Radio fields: keep the submitted choice if it is a valid one, otherwise use the default
+    foreach ( security_header_radio_fields() as $id => $choices ) {
+
+        $value = isset( $input[ $id ] ) ? (string) $input[ $id ] : '';
+
+        $output[ $id ] = array_key_exists( $value, $choices ) ? $value : $defaults[ $id ];
+
+    }
+
+    // Checkboxes (site list and on/off toggles): stored as 1 / 0
+    $checkbox_ids = array_merge(
+        array_keys( security_header_default_sites_list() ),
+        array_keys( security_header_toggle_fields() )
     );
 
-    foreach( $validate_radio_lists as $id => $options ){
+    foreach ( $checkbox_ids as $id ) {
 
-        $radio_options = $options;
-
-        if ( ! isset( $input[$id] ) ) {
-
-            $input[$id] = null;
-
-        }
-        if ( ! array_key_exists( $input[$id], $radio_options ) ) {
-
-            $input[$id] = null;
-
-        }
-    }
-
-    // Validate Checkbox Field Options
-    foreach(sh_default_sites_list () as $id => $options){
-
-        if ( ! isset( $input['content-security-policy-' . $id] ) ) {
-
-            $input['content-security-policy-' . $id] = null;
-
-        }
-
-        $input['content-security-policy-' . $id] = ($input['content-security-policy-' . $id] == 1 ? 1 : 0);
-    }
-
-    // Validate Other Sites Field
-    if ( isset( $input['content-security-policy-other-sites'] ) ) {
-
-        $input['content-security-policy-other-sites'] = wp_kses_post( $input['content-security-policy-other-sites'] );
+        $output[ $id ] = empty( $input[ $id ] ) ? 0 : 1;
 
     }
 
+    // Other Sites: keep only valid CSP source expressions, one per line
+    $other_sites = isset( $input['content-security-policy-other-sites'] ) ? (string) $input['content-security-policy-other-sites'] : '';
 
+    $output['content-security-policy-other-sites'] = implode( "\n", security_header_parse_sources( $other_sites ) );
 
-
-    return $input;
+    return $output;
 
 }
