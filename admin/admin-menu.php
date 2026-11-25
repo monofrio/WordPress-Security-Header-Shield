@@ -13,8 +13,8 @@ function security_header_add_sublevel_menu() {
 
     add_submenu_page(
         'options-general.php',
-        'Security Header Settings',
-        'Security Header',
+        'Security Header Shield Settings',
+        'Security Header Shield',
         'manage_options',
         'r3SecurityHeader',
         'security_header_display_settings_page'

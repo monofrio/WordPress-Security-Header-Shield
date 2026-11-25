@@ -1,5 +1,4 @@
 <?php
-include 'site-list.php';
 
 // exit if file is called directly
 if ( ! defined( 'ABSPATH' ) ) {
@@ -43,26 +42,53 @@ function security_header_register_settings() {
         'SecurityHeader'
     );
 
+    // Strict-Transport-Security
+    add_settings_section(
+        'security_header_section_hsts',
+        'Strict-Transport-Security Header',
+        'security_header_callback_section_hsts',
+        'SecurityHeader'
+    );
+
+    // Content-Security-Policy - mode and general directives
+    add_settings_section(
+        'security_header_section_csp',
+        'Content-Security-Policy',
+        'security_header_callback_section_csp',
+        'SecurityHeader'
+    );
+
     // Content-Security-Policy - frame-src
     add_settings_section(
         'security_header_section_content-security_policy_framesrc',
-        'Content-Security-Policy: frame-src',
+        'Content-Security-Policy: frame-src (allowed embeds)',
         'security_header_callback_section_field_checkbox_content_security_policy',
         'SecurityHeader'
     );
 
-/*
+    // Cross-Origin-Opener-Policy
+    add_settings_section(
+        'security_header_section_coop',
+        'Cross-Origin-Opener-Policy Header',
+        'security_header_callback_section_coop',
+        'SecurityHeader'
+    );
 
-add_settings_field(
-    string   $id,
-    string   $title,
-    callable $callback,
-    string   $page,
-    string   $section = 'default',
-    array    $args = []
-);
+    // Permissions-Policy
+    add_settings_section(
+        'security_header_section_permissions',
+        'Permissions-Policy Header',
+        'security_header_callback_section_permissions',
+        'SecurityHeader'
+    );
 
-*/
+    // Hardening
+    add_settings_section(
+        'security_header_section_hardening',
+        'Hardening',
+        'security_header_callback_section_hardening',
+        'SecurityHeader'
+    );
 
 // -- Setting Fields
 
@@ -73,9 +99,8 @@ add_settings_field(
         'security_header_callback_field_radio',
         'SecurityHeader',
         'security_header_callback_section_referrer_policy',
-        [   'id' => 'referrer-policy',
-            'label' => 'Custom Referrer-Policy',
-            'options' => referrer_policy_options_radio() ]
+        [ 'id' => 'referrer-policy',
+          'options' => security_header_referrer_policy_options() ]
     );
 
     // X-Content-Type-Options
@@ -86,8 +111,7 @@ add_settings_field(
         'SecurityHeader',
         'security_header_callback_section_x_content_type_options',
         [ 'id' => 'x-content-type-options',
-            'label' => 'Custom X-Content-Type-Options',
-            'options' => xctp_options_radio() ]
+          'options' => security_header_x_content_type_options() ]
     );
 
     // X-XSS-Protection
@@ -98,44 +122,78 @@ add_settings_field(
         'SecurityHeader',
         'security_header_section_x_xss_protection',
         [ 'id' => 'x-xss-protection',
-            'label' => 'Custom X-XSS-Protection',
-            'options' => xss_options_radio() ]
+          'options' => security_header_xss_options() ]
     );
 
-    // Content-Security-Policy
+    // Strict-Transport-Security
+    add_settings_field(
+        'strict-transport-security',
+        'Strict-Transport-Security',
+        'security_header_callback_field_radio',
+        'SecurityHeader',
+        'security_header_section_hsts',
+        [ 'id' => 'strict-transport-security',
+          'options' => security_header_hsts_options() ]
+    );
+
+    // Content-Security-Policy mode
+    add_settings_field(
+        'csp-mode',
+        'Mode',
+        'security_header_callback_field_radio',
+        'SecurityHeader',
+        'security_header_section_csp',
+        [ 'id' => 'csp-mode',
+          'options' => security_header_csp_mode_options() ]
+    );
+
+    // On/off toggles: CSP directives, COOP, Permissions-Policy features, hardening
+    foreach ( security_header_toggle_fields() as $id => $field ) {
+
+        add_settings_field(
+            $id,
+            esc_html( $field['title'] ),
+            'security_header_callback_field_checkbox',
+            'SecurityHeader',
+            'security_header_section_' . $field['section'],
+            [ 'id' => $id, 'label' => $field['label'] ]
+        );
+
+    }
+
+    // Content-Security-Policy frame-src
     add_settings_field(
         'content-security-policy-frame-src',
-        '<span style="font-size: 1rem;">Enable CSP: frame-src</span>',
+        'Enable CSP: frame-src',
         'security_header_callback_field_radio',
         'SecurityHeader',
         'security_header_section_content-security_policy_framesrc',
         [ 'id' => 'content-security-policy-frame-src',
-            'label' => 'Enable Content-Security-Policy',
-            'options' => csp_frame_src_options_radio ()  ]
+          'options' => security_header_csp_frame_src_options() ]
     );
 
-    $sh_site_list = sh_default_sites_list ();
-    foreach($sh_site_list as $id => $value){
+    foreach ( security_header_default_sites_list() as $id => $site ) {
 
         add_settings_field(
             'content-security-policy-' . $id,
-            $value[0],
+            esc_html( $site[0] ),
             'security_header_callback_field_checkbox',
             'SecurityHeader',
             'security_header_section_content-security_policy_framesrc',
-            ['id'=> $id, 'label' => $value[1]]
+            [ 'id' => $id, 'label' => $site[1] ]
         );
 
     }
 
     // Other Sites
     add_settings_field(
-    'content-security-policy-other-sites',
-    'Other Sites',
+        'content-security-policy-other-sites',
+        'Other Sites',
         'security_header_callback_field_textarea',
         'SecurityHeader',
         'security_header_section_content-security_policy_framesrc',
-        ['id'=> 'content-security-policy-other-sites', 'label' => '']
+        [ 'id' => 'content-security-policy-other-sites',
+          'label' => 'One per line, e.g. https://example.com or https://*.example.com. Invalid entries are removed when you save.' ]
     );
 
 }
